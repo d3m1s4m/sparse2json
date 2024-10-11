@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger('sparse2json_logger')
 
 
-def find_sparse(engine, min_rows_for_sparse_check):
+def find_sparse(engine, min_rows_for_sparse_check=30):
     """Finds tables that have more than one sparse column"""
     # Create a session for querying the database
     session = sessionmaker(bind=engine)()
