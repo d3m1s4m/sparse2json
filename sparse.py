@@ -46,6 +46,7 @@ def find_sparse(engine):
     # Filter out tables with more than one sparse column
     tables_to_fix = {table: cols for table, cols in sparse_columns.items() if len(cols) > 1}
 
+    session.close()  # Close the session after completing the operation
     return tables_to_fix
 
 
@@ -71,11 +72,13 @@ def convert_sparse_to_json(engine, tables_to_fix):
         # Migrate sparse columns data into the JSON column
         for sparse_column in sparse_columns:
             try:
+                # Quote the sparse column name to handle special characters
+                quoted_column = f'"{sparse_column}"'
                 session.execute(text(f"""
                     UPDATE {table} 
                     SET {json_column} = COALESCE({json_column}, '{{}}'::jsonb) 
-                    || jsonb_build_object('{sparse_column}', {sparse_column})
-                    WHERE {sparse_column} IS NOT NULL
+                    || jsonb_build_object('{sparse_column}', {quoted_column})
+                    WHERE {quoted_column} IS NOT NULL
                 """))
                 session.commit()
                 print(f"Moved data from column '{sparse_column}' to JSON field in table '{table}'.")
@@ -92,3 +95,4 @@ def convert_sparse_to_json(engine, tables_to_fix):
             except Exception as e:
                 print(f"Failed to drop column '{sparse_column}' from table '{table}': {e}")
                 session.rollback()
+    session.close()  # Close the session after completing the operation
