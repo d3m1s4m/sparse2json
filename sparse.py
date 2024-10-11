@@ -26,10 +26,13 @@ def find_sparse(engine):
         if total_rows < MIN_ROWS_FOR_SPARSE_CHECK:
             continue
 
-        for column in db_info[table]:
+        columns = db_info[table]
+        for column in columns:
+            # Wrap column names in double quotes to handle special characters
+            column_name = f'"{column}"'
             try:
                 null_count = session.execute(
-                    text(f'SELECT COUNT(*) FROM {table} WHERE {column} IS NULL')
+                    text(f'SELECT COUNT(*) FROM {table} WHERE {column_name} IS NULL')
                 ).scalar()
                 null_percentage = (null_count / total_rows) * 100 if total_rows > 0 else 0
 
