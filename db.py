@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine
 
 
-def create_db_engine(host, user, password, dbname):
+def create_db_engine(host, user, password, dbname, port=5432):
     try:
-        engine = create_engine(f'postgresql://{user}:{password}@{host}/{dbname}')
+        engine = create_engine(f'postgresql://{user}:{password}@{host}:{port}/{dbname}')
         # Attempt to connect to the database
         with engine.connect() as connection:
             print("Database connection successful.")

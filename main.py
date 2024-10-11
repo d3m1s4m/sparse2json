@@ -8,17 +8,15 @@ from config import LOGGING_CONFIG
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='Database configuration')
 parser.add_argument('-H', '--host', required=True, help='Database host')
-parser.add_argument('-P', '--port', required=True, help='Database port')
 parser.add_argument('-U', '--user', required=True, help='Database user')
 parser.add_argument('-P', '--password', required=True, help='Database password')
 parser.add_argument('-D', '--dbname', required=True, help='Database name')
+parser.add_argument('-p', '--port', default=5432, help='Database port')
 
 args = parser.parse_args()
 
-
 # Create the database engine
-engine = create_db_engine(args.host, args.user, args.password, args.dbname)
-
+engine = create_db_engine(args.host, args.user, args.password, args.dbname, args.port)
 
 # Configure logging
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -48,12 +46,12 @@ def run():
 
     # Convert sparse columns to JSON for the identified tables
     convert_sparse_to_json(engine, tables_to_fix)
-    print('Sparse columns converted to JSON successfully.')
 
     # Check if any tables need fixing
     if not bool(tables_to_fix):
         print('No tables found to fix with the given condition.')
-        return
+    else:
+        print('Done!')
 
 
 if __name__ == '__main__':
