@@ -47,3 +47,48 @@ def find_sparse(engine):
     tables_to_fix = {table: cols for table, cols in sparse_columns.items() if len(cols) > 1}
 
     return tables_to_fix
+
+
+def convert_sparse_to_json(engine, tables_to_fix):
+    """Convert sparse columns to a JSON field for tables that need fixing."""
+    # Create a session for querying the database
+    session = sessionmaker(bind=engine)()
+
+    for table, sparse_columns in tables_to_fix.items():
+        print(f"Converting sparse columns for table: {table}")
+
+        # Add a new JSONB column to the table
+        json_column = 'sparse_data'
+        try:
+            session.execute(text(f"ALTER TABLE {table} ADD COLUMN {json_column} JSONB"))
+            session.commit()
+            print(f"Added JSON column '{json_column}' to table '{table}'.")
+        except Exception as e:
+            print(f"Failed to add JSON column to {table}: {e}")
+            session.rollback()
+            continue
+
+        # Migrate sparse columns data into the JSON column
+        for sparse_column in sparse_columns:
+            try:
+                session.execute(text(f"""
+                    UPDATE {table} 
+                    SET {json_column} = COALESCE({json_column}, '{{}}'::jsonb) 
+                    || jsonb_build_object('{sparse_column}', {sparse_column})
+                    WHERE {sparse_column} IS NOT NULL
+                """))
+                session.commit()
+                print(f"Moved data from column '{sparse_column}' to JSON field in table '{table}'.")
+            except Exception as e:
+                print(f"Failed to migrate column '{sparse_column}' data for table '{table}': {e}")
+                session.rollback()
+
+        # Drop the original sparse columns
+        for sparse_column in sparse_columns:
+            try:
+                session.execute(text(f"ALTER TABLE {table} DROP COLUMN {sparse_column}"))
+                session.commit()
+                print(f"Dropped column '{sparse_column}' from table '{table}'.")
+            except Exception as e:
+                print(f"Failed to drop column '{sparse_column}' from table '{table}': {e}")
+                session.rollback()
