@@ -1,8 +1,8 @@
+import logging
 from collections import defaultdict
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from schema import get_tables_and_columns
-import logging
 
 
 # Get the logger configured in main.py
