@@ -2,7 +2,7 @@ import argparse
 import logging.config
 from config import LOGGING_CONFIG
 from db import create_db_engine
-from sparse import find_sparse, convert_sparse_to_json
+from sparse import find_sparse_tables, convert_sparse_to_json
 
 
 # Command-line argument parsing
@@ -16,11 +16,11 @@ parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose
 
 args = parser.parse_args()
 
-# Create the database engine
-engine = create_db_engine(args.host, args.user, args.password, args.dbname, args.port)
-
 # Configure logging
 logging.config.dictConfig(LOGGING_CONFIG)
+
+# Create the database engine
+engine = create_db_engine(args.host, args.user, args.password, args.dbname, args.port)
 
 
 def get_min_rows_for_sparse_check():
@@ -45,7 +45,7 @@ def run():
     print('Running. This may take some time.')
 
     # Find tables to fix
-    tables_to_fix = find_sparse(engine, min_rows_for_sparse_check)
+    tables_to_fix = find_sparse_tables(engine, min_rows_for_sparse_check)
 
     # Convert sparse columns to JSON for the identified tables
     convert_sparse_to_json(engine, tables_to_fix, is_verbose=args.verbose)

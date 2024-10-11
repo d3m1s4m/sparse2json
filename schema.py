@@ -27,4 +27,3 @@ def get_tables_and_columns(engine):
         db_info[table] = get_columns_names(engine, table)
 
     return db_info
-
