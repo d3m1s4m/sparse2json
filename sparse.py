@@ -1,21 +1,15 @@
-import logging
 from collections import defaultdict
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
 from schema import get_tables_and_columns
+import logging
 
 
-MIN_ROWS_FOR_SPARSE_CHECK = 30
-
-# Configure logging
-logging.basicConfig(
-    filename='sparse.log',  # Log file name
-    level=logging.INFO,  # Log level
-    format='%(asctime)s - %(levelname)s - %(message)s'  # Log message format
-)
+# Get the logger configured in main.py
+logger = logging.getLogger('sparse2json_logger')
 
 
-def find_sparse(engine):
+def find_sparse(engine, min_rows_for_sparse_check):
     """Finds tables that have more than one sparse column"""
     # Create a session for querying the database
     session = sessionmaker(bind=engine)()
@@ -31,7 +25,7 @@ def find_sparse(engine):
         total_rows = session.execute(text(f'SELECT COUNT(*) FROM {table}')).scalar()
 
         # Skip tables with fewer than MIN_ROW rows
-        if total_rows < MIN_ROWS_FOR_SPARSE_CHECK:
+        if total_rows < min_rows_for_sparse_check:
             continue
 
         columns = db_info[table]
@@ -49,7 +43,7 @@ def find_sparse(engine):
                     sparse_columns[table].append(column)
 
             except Exception as e:
-                logging.error(f"Error processing column '{column}' in table '{table}': {e}")
+                logger.error(f"Error processing column '{column}' in table '{table}': {e}")
 
     # Filter out tables with more than one sparse column
     tables_to_fix = {table: cols for table, cols in sparse_columns.items() if len(cols) > 1}
@@ -64,16 +58,16 @@ def convert_sparse_to_json(engine, tables_to_fix):
     session = sessionmaker(bind=engine)()
 
     for table, sparse_columns in tables_to_fix.items():
-        logging.info(f"Converting sparse columns for table: {table}")
+        logger.info(f"Converting sparse columns for table: {table}")
 
         # Add a new JSONB column to the table
         json_column = 'sparse_data'
         try:
             session.execute(text(f"ALTER TABLE {table} ADD COLUMN {json_column} JSONB"))
             session.commit()
-            logging.info(f"Added JSON column '{json_column}' to table '{table}'.")
+            logger.info(f"Added JSON column '{json_column}' to table '{table}'.")
         except Exception as e:
-            logging.error(f"Failed to add JSON column to {table}: {e}")
+            logger.error(f"Failed to add JSON column to {table}: {e}")
             session.rollback()
             continue
 
@@ -93,9 +87,9 @@ def convert_sparse_to_json(engine, tables_to_fix):
                     WHERE {quoted_column} IS NOT NULL
                 """))
                 session.commit()
-                logging.info(f"Moved data from column '{sparse_column}' to JSON field in table '{table}'.")
+                logger.info(f"Moved data from column '{sparse_column}' to JSON field in table '{table}'.")
             except Exception as e:
-                logging.error(f"Failed to migrate column '{sparse_column}' data for table '{table}': {e}")
+                logger.error(f"Failed to migrate column '{sparse_column}' data for table '{table}': {e}")
                 session.rollback()
 
         # Drop the original sparse columns
@@ -105,9 +99,9 @@ def convert_sparse_to_json(engine, tables_to_fix):
                 quoted_column = f'"{sparse_column}"'
                 session.execute(text(f"ALTER TABLE {table} DROP COLUMN {quoted_column}"))
                 session.commit()
-                logging.info(f"Dropped column '{sparse_column}' from table '{table}'.")
+                logger.info(f"Dropped column '{sparse_column}' from table '{table}'.")
             except Exception as e:
-                logging.error(f"Failed to drop column '{sparse_column}' from table '{table}': {e}")
+                logger.error(f"Failed to drop column '{sparse_column}' from table '{table}': {e}")
                 session.rollback()
 
     session.close()  # Close the session after completing the operation
