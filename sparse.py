@@ -59,6 +59,7 @@ def convert_sparse_to_json(engine, tables_to_fix):
 
     for table, sparse_columns in tables_to_fix.items():
         logger.info(f"Converting sparse columns for table: {table}")
+        print(f"Converting sparse columns for table: {table}")
 
         # Add a new JSONB column to the table
         json_column = 'sparse_data'

@@ -41,6 +41,8 @@ def run():
     # Receive min rows for sparse check from user
     min_rows_for_sparse_check = get_min_rows_for_sparse_check()
 
+    print('Running. This may take some time.')
+
     # Find tables to fix
     tables_to_fix = find_sparse(engine, min_rows_for_sparse_check)
 
