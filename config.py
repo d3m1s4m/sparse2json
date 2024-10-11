@@ -1,5 +1,4 @@
 import os
-import logging
 
 
 # Determine logging level from environment variable or default to INFO

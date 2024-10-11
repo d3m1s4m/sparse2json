@@ -38,14 +38,40 @@ def get_min_rows_for_sparse_check():
             print('Invalid input. Please enter a valid integer.')
 
 
+def get_sparse_percent():
+    levels = {1: 30, 2: 40, 3: 50, 4: 60, 5: 70}
+
+    print('Select sparse level (default 2):')
+    for level, percentage in levels.items():
+        print(f'{level}: More than {percentage}% NULL values')
+
+    user_input = input('Enter the sparse level (1-5): ')
+    if user_input.strip() == '':
+        return levels[2]
+
+    try:
+        level = int(user_input)
+        if level in levels:
+            return levels[level]
+        else:
+            print("Invalid level. Please enter a number between 1 and 5.")
+            return get_sparse_percent()
+    except ValueError:
+        print("Invalid input. Please enter a valid integer.")
+        return get_sparse_percent()
+
+
 def run():
     # Receive min rows for sparse check from user
     min_rows_for_sparse_check = get_min_rows_for_sparse_check()
 
+    # Receive sparse level from user
+    sparse_percent = get_sparse_percent()
+
     print('Running. This may take some time.')
 
     # Find tables to fix
-    tables_to_fix = find_sparse_tables(engine, min_rows_for_sparse_check)
+    tables_to_fix = find_sparse_tables(engine, min_rows_for_sparse_check, sparse_percent)
 
     # Convert sparse columns to JSON for the identified tables
     convert_sparse_to_json(engine, tables_to_fix, is_verbose=args.verbose)
