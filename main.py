@@ -12,6 +12,7 @@ parser.add_argument('-U', '--user', required=True, help='Database user')
 parser.add_argument('-P', '--password', required=True, help='Database password')
 parser.add_argument('-D', '--dbname', required=True, help='Database name')
 parser.add_argument('-p', '--port', default=5432, help='Database port')
+parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
 
 args = parser.parse_args()
 
@@ -47,7 +48,7 @@ def run():
     tables_to_fix = find_sparse(engine, min_rows_for_sparse_check)
 
     # Convert sparse columns to JSON for the identified tables
-    convert_sparse_to_json(engine, tables_to_fix)
+    convert_sparse_to_json(engine, tables_to_fix, is_verbose=args.verbose)
 
     # Check if any tables need fixing
     if not bool(tables_to_fix):

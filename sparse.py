@@ -52,14 +52,15 @@ def find_sparse(engine, min_rows_for_sparse_check=30):
     return tables_to_fix
 
 
-def convert_sparse_to_json(engine, tables_to_fix):
+def convert_sparse_to_json(engine, tables_to_fix, is_verbose):
     """Convert sparse columns to a JSON field for tables that need fixing."""
     # Create a session for querying the database
     session = sessionmaker(bind=engine)()
 
     for table, sparse_columns in tables_to_fix.items():
         logger.info(f"Converting sparse columns for table: {table}")
-        print(f"Converting sparse columns for table: {table}")
+        if is_verbose:
+            print(f"Converting sparse columns for table: {table}")
 
         # Add a new JSONB column to the table
         json_column = 'sparse_data'
