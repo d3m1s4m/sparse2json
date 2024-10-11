@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
@@ -5,6 +6,13 @@ from schema import get_tables_and_columns
 
 
 MIN_ROWS_FOR_SPARSE_CHECK = 30
+
+# Configure logging
+logging.basicConfig(
+    filename='sparse.log',  # Log file name
+    level=logging.INFO,  # Log level
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Log message format
+)
 
 
 def find_sparse(engine):
@@ -41,7 +49,7 @@ def find_sparse(engine):
                     sparse_columns[table].append(column)
 
             except Exception as e:
-                print(f"Error processing column '{column}' in table '{table}': {e}")
+                logging.error(f"Error processing column '{column}' in table '{table}': {e}")
 
     # Filter out tables with more than one sparse column
     tables_to_fix = {table: cols for table, cols in sparse_columns.items() if len(cols) > 1}
@@ -56,16 +64,16 @@ def convert_sparse_to_json(engine, tables_to_fix):
     session = sessionmaker(bind=engine)()
 
     for table, sparse_columns in tables_to_fix.items():
-        print(f"Converting sparse columns for table: {table}")
+        logging.info(f"Converting sparse columns for table: {table}")
 
         # Add a new JSONB column to the table
         json_column = 'sparse_data'
         try:
             session.execute(text(f"ALTER TABLE {table} ADD COLUMN {json_column} JSONB"))
             session.commit()
-            print(f"Added JSON column '{json_column}' to table '{table}'.")
+            logging.info(f"Added JSON column '{json_column}' to table '{table}'.")
         except Exception as e:
-            print(f"Failed to add JSON column to {table}: {e}")
+            logging.error(f"Failed to add JSON column to {table}: {e}")
             session.rollback()
             continue
 
@@ -74,6 +82,10 @@ def convert_sparse_to_json(engine, tables_to_fix):
             try:
                 # Quote the sparse column name to handle special characters
                 quoted_column = f'"{sparse_column}"'
+                # Updates the JSONB column {json_column} by:
+                # 1. Using COALESCE to initialize it as an empty JSON object if it is NULL (has not been populated yet).
+                # 2. Adding a new key-value pair from the sparse column {sparse_column}.
+                # Only updates rows where {quoted_column} is NOT NULL.
                 session.execute(text(f"""
                     UPDATE {table} 
                     SET {json_column} = COALESCE({json_column}, '{{}}'::jsonb) 
@@ -81,18 +93,21 @@ def convert_sparse_to_json(engine, tables_to_fix):
                     WHERE {quoted_column} IS NOT NULL
                 """))
                 session.commit()
-                print(f"Moved data from column '{sparse_column}' to JSON field in table '{table}'.")
+                logging.info(f"Moved data from column '{sparse_column}' to JSON field in table '{table}'.")
             except Exception as e:
-                print(f"Failed to migrate column '{sparse_column}' data for table '{table}': {e}")
+                logging.error(f"Failed to migrate column '{sparse_column}' data for table '{table}': {e}")
                 session.rollback()
 
         # Drop the original sparse columns
         for sparse_column in sparse_columns:
             try:
-                session.execute(text(f"ALTER TABLE {table} DROP COLUMN {sparse_column}"))
+                # Quote the sparse column name to handle reserved keywords
+                quoted_column = f'"{sparse_column}"'
+                session.execute(text(f"ALTER TABLE {table} DROP COLUMN {quoted_column}"))
                 session.commit()
-                print(f"Dropped column '{sparse_column}' from table '{table}'.")
+                logging.info(f"Dropped column '{sparse_column}' from table '{table}'.")
             except Exception as e:
-                print(f"Failed to drop column '{sparse_column}' from table '{table}': {e}")
+                logging.error(f"Failed to drop column '{sparse_column}' from table '{table}': {e}")
                 session.rollback()
+
     session.close()  # Close the session after completing the operation
