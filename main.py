@@ -1,12 +1,12 @@
 import argparse
-from db import create_db_engine
-from sparse import find_sparse, convert_sparse_to_json
 import logging.config
 from config import LOGGING_CONFIG
+from db import create_db_engine
+from sparse import find_sparse, convert_sparse_to_json
 
 
 # Command-line argument parsing
-parser = argparse.ArgumentParser(description='Database configuration')
+parser = argparse.ArgumentParser(description='Sparse2JSON')
 parser.add_argument('-H', '--host', required=True, help='Database host')
 parser.add_argument('-U', '--user', required=True, help='Database user')
 parser.add_argument('-P', '--password', required=True, help='Database password')

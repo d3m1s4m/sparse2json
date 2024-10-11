@@ -1,5 +1,9 @@
+import os
 import logging
 
+
+# Determine logging level from environment variable or default to INFO
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 
 # Configure logging
 LOGGING_CONFIG = {
@@ -20,7 +24,7 @@ LOGGING_CONFIG = {
     'loggers': {
         'sparse2json_logger': {
             'handlers': ['file'],
-            'level': logging.INFO,
+            'level': log_level,
             'propagate': False,
         },
     },
