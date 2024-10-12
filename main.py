@@ -1,4 +1,5 @@
 import argparse
+import getpass
 import logging.config
 from config import LOGGING_CONFIG
 from db import create_db_engine
@@ -10,10 +11,10 @@ from sparse_convertor import convert_sparse_to_json
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='Sparse2JSON')
 parser.add_argument('-H', '--host', required=True, help='Database host')
+parser.add_argument('-P', '--port', default=5432, help='Database port')
 parser.add_argument('-U', '--user', required=True, help='Database user')
-parser.add_argument('-P', '--password', required=True, help='Database password')
+# parser.add_argument('-p', '--password', required=True, help='Database password')
 parser.add_argument('-D', '--dbname', required=True, help='Database name')
-parser.add_argument('-p', '--port', default=5432, help='Database port')
 parser.add_argument('-T', '--table', help='Database specific table')
 parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
 
@@ -21,9 +22,6 @@ args = parser.parse_args()
 
 # Configure logging
 logging.config.dictConfig(LOGGING_CONFIG)
-
-# Create the database engine
-engine = create_db_engine(args.host, args.user, args.password, args.dbname, args.port)
 
 
 def get_min_rows_for_sparse_check():
@@ -64,7 +62,18 @@ def get_sparse_percent():
         return get_sparse_percent()
 
 
+def get_db_password():
+    password = getpass.getpass('Enter your password: ')
+    return password
+
+
 def run():
+    # Receive the database password from user
+    password = get_db_password()
+
+    # Create the database engine
+    engine = create_db_engine(args.host, args.user, password, args.dbname, args.port)
+
     if args.table and not check_table_exists(engine, args.table):
         print("Given table name doesn't exists")
         return
