@@ -9,8 +9,14 @@ from schema import get_tables_and_columns, get_columns_names
 logger = logging.getLogger('sparse2json_logger')
 
 
-def find_sparse_columns(engine, session, table, min_rows_for_sparse_check=30, sparse_percent=40):
+def find_sparse_columns(engine, table, min_rows_for_sparse_check=30, sparse_percent=40, session=None):
     """Identify sparse columns in a given table."""
+    new_session_flag = False
+    # If no session was given, initialize one
+    if session is None:
+        new_session_flag = True
+        session = sessionmaker(bind=engine)()
+
     # Dictionary to store tables and their sparse columns
     table_sparse_columns = defaultdict(list)
 
@@ -37,6 +43,9 @@ def find_sparse_columns(engine, session, table, min_rows_for_sparse_check=30, sp
         except Exception as e:
             logger.error(f"Error processing column '{column}' in table '{table}': {e}")
 
+    if new_session_flag:
+        session.close()
+
     # If table sparse columns count is less than 2 return {}
     return table_sparse_columns if len(table_sparse_columns[table]) > 1 else {}
 
@@ -54,7 +63,7 @@ def find_sparse_tables(engine, min_rows_for_sparse_check=30, sparse_percent=40):
 
     tables = db_info.keys()
     for table in tables:
-        table_sparse_columns = find_sparse_columns(engine, session, table, min_rows_for_sparse_check, sparse_percent)
+        table_sparse_columns = find_sparse_columns(engine, table, min_rows_for_sparse_check, sparse_percent, session)
 
         # Only add non-empty results to the main dictionary
         if table_sparse_columns:

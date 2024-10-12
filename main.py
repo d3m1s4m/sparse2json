@@ -2,8 +2,8 @@ import argparse
 import logging.config
 from config import LOGGING_CONFIG
 from db import create_db_engine
-from sparse import find_sparse_tables, convert_sparse_to_json
-
+from schema import check_table_exists
+from sparse import find_sparse_tables, convert_sparse_to_json, find_sparse_columns
 
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='Sparse2JSON')
@@ -12,6 +12,7 @@ parser.add_argument('-U', '--user', required=True, help='Database user')
 parser.add_argument('-P', '--password', required=True, help='Database password')
 parser.add_argument('-D', '--dbname', required=True, help='Database name')
 parser.add_argument('-p', '--port', default=5432, help='Database port')
+parser.add_argument('-T', '--table', help='Database specific table')
 parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
 
 args = parser.parse_args()
@@ -62,6 +63,10 @@ def get_sparse_percent():
 
 
 def run():
+    if args.table and not check_table_exists(engine, args.table):
+        print("Given table name doesn't exists")
+        return
+
     # Receive min rows for sparse check from user
     min_rows_for_sparse_check = get_min_rows_for_sparse_check()
 
@@ -71,7 +76,11 @@ def run():
     print('Running. This may take some time.')
 
     # Find tables to fix
-    tables_to_fix = find_sparse_tables(engine, min_rows_for_sparse_check, sparse_percent)
+    if args.table:
+        tables_to_fix = find_sparse_columns(engine, args.table, min_rows_for_sparse_check, sparse_percent)
+        print(tables_to_fix)
+    else:
+        tables_to_fix = find_sparse_tables(engine, min_rows_for_sparse_check, sparse_percent)
 
     # Convert sparse columns to JSON for the identified tables
     convert_sparse_to_json(engine, tables_to_fix, is_verbose=args.verbose)

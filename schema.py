@@ -27,3 +27,8 @@ def get_tables_and_columns(engine):
         db_info[table] = get_columns_names(engine, table)
 
     return db_info
+
+
+def check_table_exists(engine, table_name):
+    inspector = inspect(engine)
+    return inspector.has_table(table_name)
