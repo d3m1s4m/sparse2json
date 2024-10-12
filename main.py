@@ -3,7 +3,9 @@ import logging.config
 from config import LOGGING_CONFIG
 from db import create_db_engine
 from schema import check_table_exists
-from sparse import find_sparse_tables, convert_sparse_to_json, find_sparse_columns
+from sparse_finder import find_sparse_tables, find_sparse_columns
+from sparse_convertor import convert_sparse_to_json
+
 
 # Command-line argument parsing
 parser = argparse.ArgumentParser(description='Sparse2JSON')
