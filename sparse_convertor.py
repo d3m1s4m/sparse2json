@@ -14,19 +14,24 @@ def convert_sparse_to_json(engine, tables_to_fix, is_verbose):
 
     for table, sparse_columns in tables_to_fix.items():
         logger.info(f"Converting sparse columns for table: {table}")
-        if is_verbose:
-            print(f"Converting sparse columns for table: {table}")
+        print(f"Converting sparse columns for table: {table}")
 
         # Define JSON column name
         json_column = 'sparse_data'
 
         # Add a new JSONB column to the table
+        if is_verbose:
+            print(f"Adding a new JSONB column to the '{table}' table")
         add_json_column(session, table, json_column)
 
         # Migrate sparse columns data into the JSON column
+        if is_verbose:
+            print(f"Migrate sparse columns data into the JSON column for the '{table}' table")
         migrate_sparse_to_json(session, table, sparse_columns, json_column)
 
         # Drop the original sparse columns
+        if is_verbose:
+            print(f"Dropping the original sparse columns for the '{table}' table")
         drop_original_sparse_columns(session, table, sparse_columns)
 
     session.close()
