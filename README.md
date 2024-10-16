@@ -16,6 +16,7 @@ Sparse2JSON is a powerful tool designed to identify and convert sparse columns i
 - **Transaction Management**: Ensures data integrity through proper transaction handling.
 - **Comprehensive Logging**: Tracks the process and errors with detailed logging.
 - **Flexible Configuration**: Adjust parameters for minimum row counts (default: 30 row) and sparsity percentages (default: 40% of NULL values).
+- **Multi-threading for Performance**: Utilizes multi-threading to parallelize the conversion process for multiple tables, significantly improving performance on larger datasets.
 - **Safe Password Handling**: Ensures secure password entry to protect sensitive user information.
 
 ## Getting Started
